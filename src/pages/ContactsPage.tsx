@@ -45,11 +45,17 @@ export default function ContactsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
+    // Trim dữ liệu để tránh khoảng trắng thừa
+    const name = formData.name.trim();
+    const phone = formData.phone.trim();
+    const email = formData.email.trim();
+
     let result;
     if (editingContact) {
-      result = await updateContact(editingContact.id, formData.name, formData.phone, formData.email);
+      result = await updateContact(editingContact.id, name, phone, email);
     } else {
-      result = await addContact(formData.name, formData.phone, formData.email);
+      result = await addContact(name, phone, email);
     }
     setIsSubmitting(false);
     if (!result.error) {
@@ -160,7 +166,7 @@ export default function ContactsPage() {
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
-                type="email"
+                type="text"
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 placeholder="example@gmail.com"
