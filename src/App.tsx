@@ -3,6 +3,8 @@ import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout/Layout';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
+import DebtsPage from './pages/DebtsPage';
+import ContactsPage from './pages/ContactsPage';
 
 // Component bảo vệ Route
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -35,6 +37,8 @@ function App() {
           </ProtectedRoute>
         }>
           <Route index element={<DashboardPage />} />
+          <Route path="debts" element={<DebtsPage />} />
+          <Route path="contacts" element={<ContactsPage />} />
         </Route>
         
         {/* Fallback route */}
