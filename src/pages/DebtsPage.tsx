@@ -101,7 +101,14 @@ export default function DebtsPage() {
                 </div>
                 <div>
                   <p className="font-medium text-sm">{t.categories?.name}</p>
-                  <p className="text-xs text-muted-foreground">{format(new Date(t.date), 'dd/MM/yyyy')}</p>
+                  {t.note && (
+                    <p className="text-xs text-muted-foreground italic line-clamp-1 max-w-[200px]">
+                      "{t.note}"
+                    </p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground opacity-70">
+                    {format(new Date(t.date), 'dd/MM/yyyy')}
+                  </p>
                 </div>
               </div>
               <p className={cn(
