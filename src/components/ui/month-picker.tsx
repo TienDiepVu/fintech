@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format } from 'date-fns';
 import { CalendarDays } from 'lucide-react';
 
 interface MonthPickerProps {
@@ -10,9 +9,28 @@ interface MonthPickerProps {
 }
 
 export default function MonthPicker({ month, year, onChange }: MonthPickerProps) {
-  const months = Array.from({ length: 12 }, (_, i) => i + 1);
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+
+  const years = useMemo(() => {
+    // Chỉ cho phép chọn từ 5 năm trước đến năm hiện tại
+    const startYear = currentYear - 5;
+    return Array.from({ length: currentYear - startYear + 1 }, (_, i) => startYear + i).reverse();
+  }, [currentYear]);
+
+  const months = useMemo(() => {
+    // Nếu là năm hiện tại, chỉ cho phép chọn đến tháng hiện tại
+    const maxMonth = year === currentYear ? currentMonth : 12;
+    return Array.from({ length: maxMonth }, (_, i) => i + 1);
+  }, [year, currentYear, currentMonth]);
+
+  // Nếu lỡ người dùng đang ở một tháng trong tương lai (do logic cũ), tự động đưa về tháng hiện tại
+  React.useEffect(() => {
+    if (year === currentYear && month > currentMonth) {
+      onChange(currentMonth, year);
+    }
+  }, [year, month, currentYear, currentMonth, onChange]);
 
   return (
     <div className="flex items-center gap-2">
@@ -36,7 +54,15 @@ export default function MonthPicker({ month, year, onChange }: MonthPickerProps)
 
         <Select
           value={year.toString()}
-          onValueChange={(val) => onChange(month, parseInt(val))}
+          onValueChange={(val) => {
+            const newYear = parseInt(val);
+            let newMonth = month;
+            // Nếu chuyển sang năm hiện tại mà tháng cũ > tháng hiện tại, reset tháng
+            if (newYear === currentYear && month > currentMonth) {
+              newMonth = currentMonth;
+            }
+            onChange(newMonth, newYear);
+          }}
         >
           <SelectTrigger className="w-[90px] h-9">
             <SelectValue placeholder="Năm" />
