@@ -10,14 +10,70 @@ export interface TransactionFilter {
   contactId?: string;
 }
 
+export interface MonthlyStats {
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+  allTransactions: Transaction[]; // Dùng cho biểu đồ, không phân trang
+}
+
 export function useTransactions(filter?: TransactionFilter) {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats>({
+    totalIncome: 0,
+    totalExpense: 0,
+    balance: 0,
+    allTransactions: []
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const PAGE_SIZE = 10;
+
+  const fetchMonthlyStats = useCallback(async () => {
+    if (!user || !filter?.month || !filter?.year) return;
+
+    try {
+      const date = new Date(filter.year, filter.month - 1, 1);
+      const start = format(startOfMonth(date), 'yyyy-MM-dd');
+      const end = format(endOfMonth(date), 'yyyy-MM-dd');
+
+      let query = supabase
+        .from('transactions')
+        .select(`
+          *,
+          categories:category_id (*)
+        `)
+        .gte('date', start)
+        .lte('date', end);
+
+      if (filter.contactId) {
+        query = query.eq('contact_id', filter.contactId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      let income = 0;
+      let expense = 0;
+      data?.forEach(t => {
+        if (t.type === 'income') income += Number(t.amount);
+        else expense += Number(t.amount);
+      });
+
+      setMonthlyStats({
+        totalIncome: income,
+        totalExpense: expense,
+        balance: income - expense,
+        allTransactions: data || []
+      });
+    } catch (err) {
+      console.error('Error fetching monthly stats:', err);
+    }
+  }, [user, filter?.month, filter?.year, filter?.contactId]);
 
   const fetchTransactions = useCallback(async (isLoadMore = false) => {
     if (!user) return;
@@ -25,6 +81,8 @@ export function useTransactions(filter?: TransactionFilter) {
     if (!isLoadMore) {
       setLoading(true);
       setPage(0);
+      // Fetch stats song song khi fetch trang đầu
+      fetchMonthlyStats();
     }
 
     try {
@@ -40,7 +98,6 @@ export function useTransactions(filter?: TransactionFilter) {
         .order('created_at', { ascending: false })
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
-      // Lọc theo tháng năm nếu có
       if (filter?.month !== undefined && filter?.year !== undefined) {
         const date = new Date(filter.year, filter.month - 1, 1);
         const start = format(startOfMonth(date), 'yyyy-MM-dd');
@@ -48,7 +105,6 @@ export function useTransactions(filter?: TransactionFilter) {
         query = query.gte('date', start).lte('date', end);
       }
 
-      // Lọc theo contactId nếu có
       if (filter?.contactId) {
         query = query.eq('contact_id', filter.contactId);
       }
@@ -71,16 +127,15 @@ export function useTransactions(filter?: TransactionFilter) {
     } finally {
       setLoading(false);
     }
-  }, [user, filter?.month, filter?.year, filter?.contactId, page]);
+  }, [user, filter?.month, filter?.year, filter?.contactId, page, fetchMonthlyStats]);
 
   useEffect(() => {
     fetchTransactions();
 
     if (!user) return;
 
-    // Realtime subscription
     const subscription = supabase
-      .channel('transactions-changes')
+      .channel('transactions-changes-stats')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
@@ -88,7 +143,6 @@ export function useTransactions(filter?: TransactionFilter) {
         filter: `user_id=eq.${user.id}` 
       }, 
       () => {
-        // Gọi lại để cập nhật nhưng không loading
         fetchTransactions();
       })
       .subscribe();
@@ -157,6 +211,7 @@ export function useTransactions(filter?: TransactionFilter) {
 
   return {
     transactions,
+    monthlyStats,
     loading,
     error,
     hasMore,
