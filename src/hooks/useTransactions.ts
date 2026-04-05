@@ -2,18 +2,34 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { Transaction, TransactionFormData } from '../types';
+import { startOfMonth, endOfMonth, format } from 'date-fns';
 
-export function useTransactions() {
+export interface TransactionFilter {
+  month?: number; // 1-12
+  year?: number;
+  contactId?: string;
+}
+
+export function useTransactions(filter?: TransactionFilter) {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 10;
 
-  const fetchTransactions = useCallback(async () => {
+  const fetchTransactions = useCallback(async (isLoadMore = false) => {
     if (!user) return;
-    setLoading(true);
+    
+    if (!isLoadMore) {
+      setLoading(true);
+      setPage(0);
+    }
+
     try {
-      const { data, error } = await supabase
+      const currentPage = isLoadMore ? page + 1 : 0;
+      let query = supabase
         .from('transactions')
         .select(`
           *,
@@ -21,17 +37,41 @@ export function useTransactions() {
           contacts:contact_id (name)
         `)
         .order('date', { ascending: false })
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+
+      // Lọc theo tháng năm nếu có
+      if (filter?.month !== undefined && filter?.year !== undefined) {
+        const date = new Date(filter.year, filter.month - 1, 1);
+        const start = format(startOfMonth(date), 'yyyy-MM-dd');
+        const end = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', start).lte('date', end);
+      }
+
+      // Lọc theo contactId nếu có
+      if (filter?.contactId) {
+        query = query.eq('contact_id', filter.contactId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
-      setTransactions(data || []);
+
+      if (isLoadMore) {
+        setTransactions(prev => [...prev, ...(data || [])]);
+        setPage(currentPage);
+      } else {
+        setTransactions(data || []);
+      }
+
+      setHasMore(data?.length === PAGE_SIZE);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Đã có lỗi xảy ra khi tải dữ liệu';
       setError(message);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, filter?.month, filter?.year, filter?.contactId, page]);
 
   useEffect(() => {
     fetchTransactions();
@@ -48,7 +88,7 @@ export function useTransactions() {
         filter: `user_id=eq.${user.id}` 
       }, 
       () => {
-        // Chỉ cần gọi lại fetchTransactions để lấy dữ liệu chuẩn nhất từ DB
+        // Gọi lại để cập nhật nhưng không loading
         fetchTransactions();
       })
       .subscribe();
@@ -56,7 +96,7 @@ export function useTransactions() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [user, fetchTransactions]);
+  }, [user, filter?.month, filter?.year, filter?.contactId]);
 
   const addTransaction = async (data: TransactionFormData) => {
     if (!user) return { error: 'Không tìm thấy người dùng' };
@@ -119,9 +159,11 @@ export function useTransactions() {
     transactions,
     loading,
     error,
+    hasMore,
+    loadMore: () => fetchTransactions(true),
     addTransaction,
     deleteTransaction,
     updateTransaction,
-    refresh: fetchTransactions
+    refresh: () => fetchTransactions(false)
   };
 }
