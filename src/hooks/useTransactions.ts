@@ -14,7 +14,7 @@ export interface MonthlyStats {
   totalIncome: number;
   totalExpense: number;
   balance: number;
-  allTransactions: Transaction[]; // Dùng cho biểu đồ, không phân trang
+  allTransactions: Transaction[]; // Dùng cho biểu đồ hoặc tổng nợ
 }
 
 export function useTransactions(filter?: TransactionFilter) {
@@ -33,23 +33,25 @@ export function useTransactions(filter?: TransactionFilter) {
   const PAGE_SIZE = 10;
 
   const fetchMonthlyStats = useCallback(async () => {
-    if (!user || !filter?.month || !filter?.year) return;
+    if (!user) return;
 
     try {
-      const date = new Date(filter.year, filter.month - 1, 1);
-      const start = format(startOfMonth(date), 'yyyy-MM-dd');
-      const end = format(endOfMonth(date), 'yyyy-MM-dd');
-
       let query = supabase
         .from('transactions')
         .select(`
           *,
           categories:category_id (*)
-        `)
-        .gte('date', start)
-        .lte('date', end);
+        `);
 
-      if (filter.contactId) {
+      // Chỉ lọc theo thời gian NẾU có filter tháng và năm
+      if (filter?.month !== undefined && filter?.year !== undefined) {
+        const date = new Date(filter.year, filter.month - 1, 1);
+        const start = format(startOfMonth(date), 'yyyy-MM-dd');
+        const end = format(endOfMonth(date), 'yyyy-MM-dd');
+        query = query.gte('date', start).lte('date', end);
+      }
+
+      if (filter?.contactId) {
         query = query.eq('contact_id', filter.contactId);
       }
 
@@ -81,7 +83,6 @@ export function useTransactions(filter?: TransactionFilter) {
     if (!isLoadMore) {
       setLoading(true);
       setPage(0);
-      // Fetch stats song song khi fetch trang đầu
       fetchMonthlyStats();
     }
 
