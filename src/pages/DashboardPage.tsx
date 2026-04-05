@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useTransactions } from '../hooks/useTransactions';
 import SummaryCard from '../components/Dashboard/SummaryCard';
 import ExpenseChart from '../components/Dashboard/ExpenseChart';
@@ -17,6 +17,7 @@ export default function DashboardPage() {
 
   const { 
     transactions, 
+    monthlyStats, // Dữ liệu tổng hợp không phân trang
     loading, 
     hasMore, 
     loadMore, 
@@ -28,20 +29,7 @@ export default function DashboardPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
-  // Tính toán tổng thu/chi cho tháng đang lọc
-  const { totalIncome, totalExpense, balance } = useMemo(() => {
-    let income = 0;
-    let expense = 0;
-    transactions.forEach(t => {
-      if (t.type === 'income') income += Number(t.amount);
-      else expense += Number(t.amount);
-    });
-    return {
-      totalIncome: income,
-      totalExpense: expense,
-      balance: income - expense
-    };
-  }, [transactions]);
+  const { totalIncome, totalExpense, balance, allTransactions } = monthlyStats;
 
   const handleFormSubmit = async (data: TransactionFormData) => {
     if (editingTransaction) {
@@ -100,12 +88,15 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Charts */}
+      {/* Charts - Sử dụng allTransactions (toàn bộ trong tháng) */}
       <div className="grid grid-cols-1 gap-8">
-        <ExpenseChart transactions={transactions} />
+        <ExpenseChart 
+          transactions={allTransactions} 
+          monthDate={new Date(filter.year, filter.month - 1)} 
+        />
       </div>
 
-      {/* Transaction List */}
+      {/* Transaction List - Sử dụng transactions (có phân trang) */}
       <div className="space-y-4">
         <TransactionList
           transactions={transactions}

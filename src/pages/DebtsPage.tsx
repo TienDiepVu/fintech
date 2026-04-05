@@ -15,19 +15,17 @@ export default function DebtsPage() {
     year: new Date().getFullYear()
   });
 
-  const { transactions, loading: loadingTransactions, hasMore, loadMore } = useTransactions(filter);
+  const { transactions, monthlyStats, loading: loadingTransactions, hasMore, loadMore } = useTransactions(filter);
   const { contacts, loading: loadingContacts } = useContacts();
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
 
-  // Tính toán số nợ cho từng contact (Dựa trên TẤT CẢ transactions để có số dư đúng)
-  // Lưu ý: Để số dư luôn đúng, ta nên dùng một hook riêng hoặc fetch toàn bộ nợ
-  // Ở đây tôi giả định debtData được tính từ transactions hiện có hoặc fetch riêng
-  // Để đơn giản và chính xác, tôi sẽ filter transactions theo contactId trong render
-  
+  const { allTransactions } = monthlyStats;
+
+  // Tính toán số nợ dựa trên allTransactions (toàn bộ trong tháng đang lọc)
   const debtData = useMemo(() => {
     const data: Record<string, { owedToMe: number; iOwe: number }> = {};
     
-    transactions.forEach(t => {
+    allTransactions.forEach(t => {
       if (!t.contact_id) return;
       
       if (!data[t.contact_id]) {
@@ -49,7 +47,7 @@ export default function DebtsPage() {
     });
 
     return data;
-  }, [transactions]);
+  }, [allTransactions]);
 
   const contactList = useMemo(() => {
     return contacts.map(c => ({
@@ -146,7 +144,7 @@ export default function DebtsPage() {
             )}
           </div>
 
-          {hasMore && contactTransactions.length >= 10 && (
+          {hasMore && (
             <div className="flex justify-center pt-4">
               <Button
                 variant="ghost"
