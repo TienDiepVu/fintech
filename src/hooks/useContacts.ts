@@ -1,32 +1,35 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import type { Transaction, TransactionFormData } from '../types';
 
-export function useTransactions() {
+export interface Contact {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  userId: string;
+  createdAt: string;
+}
+
+export function useContacts() {
   const { user } = useAuth();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTransactions = useCallback(async () => {
+  const fetchContacts = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('transactions')
-        .select(`
-          *,
-          categories:category_id (*),
-          contacts:contact_id (name)
-        `)
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false });
+        .from('contacts')
+        .select('*')
+        .order('name');
 
       if (error) throw error;
-      setTransactions(data || []);
+      setContacts(data || []);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Đã có lỗi xảy ra khi tải dữ liệu';
+      const message = err instanceof Error ? err.message : 'Đã có lỗi xảy ra khi tải danh sách người quen';
       setError(message);
     } finally {
       setLoading(false);
@@ -34,43 +37,38 @@ export function useTransactions() {
   }, [user]);
 
   useEffect(() => {
-    fetchTransactions();
+    fetchContacts();
 
     if (!user) return;
 
-    // Realtime subscription
     const subscription = supabase
-      .channel('transactions-changes')
+      .channel('contacts-changes')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'transactions',
+        table: 'contacts',
         filter: `user_id=eq.${user.id}` 
       }, 
       () => {
-        // Chỉ cần gọi lại fetchTransactions để lấy dữ liệu chuẩn nhất từ DB
-        fetchTransactions();
+        fetchContacts();
       })
       .subscribe();
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [user, fetchTransactions]);
+  }, [user, fetchContacts]);
 
-  const addTransaction = async (data: TransactionFormData) => {
+  const addContact = async (name: string, phone?: string, email?: string) => {
     if (!user) return { error: 'Không tìm thấy người dùng' };
     try {
       const { error } = await supabase
-        .from('transactions')
+        .from('contacts')
         .insert([{
           user_id: user.id,
-          amount: parseFloat(data.amount),
-          type: data.type,
-          category_id: data.category_id,
-          contact_id: data.contact_id || null,
-          note: data.note,
-          date: data.date,
+          name,
+          phone: phone || null,
+          email: email || null,
         }]);
       if (error) throw error;
       return { error: null };
@@ -80,10 +78,10 @@ export function useTransactions() {
     }
   };
 
-  const deleteTransaction = async (id: string) => {
+  const deleteContact = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('transactions')
+        .from('contacts')
         .delete()
         .eq('id', id);
       if (error) throw error;
@@ -94,17 +92,14 @@ export function useTransactions() {
     }
   };
 
-  const updateTransaction = async (id: string, data: TransactionFormData) => {
+  const updateContact = async (id: string, name: string, phone?: string, email?: string) => {
     try {
       const { error } = await supabase
-        .from('transactions')
+        .from('contacts')
         .update({
-          amount: parseFloat(data.amount),
-          type: data.type,
-          category_id: data.category_id,
-          contact_id: data.contact_id || null,
-          note: data.note,
-          date: data.date,
+          name,
+          phone: phone || null,
+          email: email || null,
         })
         .eq('id', id);
       if (error) throw error;
@@ -116,12 +111,12 @@ export function useTransactions() {
   };
 
   return {
-    transactions,
+    contacts,
     loading,
     error,
-    addTransaction,
-    deleteTransaction,
-    updateTransaction,
-    refresh: fetchTransactions
+    addContact,
+    deleteContact,
+    updateContact,
+    refresh: fetchContacts
   };
 }

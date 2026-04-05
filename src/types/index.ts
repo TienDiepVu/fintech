@@ -6,6 +6,7 @@ export interface Transaction {
   amount: number;
   type: TransactionType;
   category_id: string;
+  contact_id?: string | null;
   note: string | null;
   date: string;
   created_at: string;
@@ -13,12 +14,16 @@ export interface Transaction {
     name: string;
     icon: string | null;
   };
+  contacts?: {
+    name: string;
+  };
 }
 
 export interface TransactionFormData {
   amount: string;
   type: TransactionType;
   category_id: string;
+  contact_id?: string;
   note: string;
   date: string;
 }

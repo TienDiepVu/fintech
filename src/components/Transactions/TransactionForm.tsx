@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { TransactionFormData } from '../../types';
 import { format } from 'date-fns';
-import { Loader2, PlusCircle } from 'lucide-react';
+import { Loader2, PlusCircle, Users } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,8 +11,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { supabase } from '@/lib/supabase';
+import { useContacts } from '@/hooks/useContacts';
 
 interface TransactionFormProps {
   onSubmit: (data: TransactionFormData) => Promise<{ error: string | null }>;
@@ -28,12 +36,14 @@ interface Category {
 }
 
 export default function TransactionForm({ onSubmit, onClose, initialData }: TransactionFormProps) {
+  const { contacts } = useContacts();
   const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState<TransactionFormData>(
     initialData || {
       amount: '',
       type: 'expense',
       category_id: '',
+      contact_id: '',
       note: '',
       date: format(new Date(), 'yyyy-MM-dd'),
     }
@@ -101,9 +111,19 @@ export default function TransactionForm({ onSubmit, onClose, initialData }: Tran
 
   const filteredCategories = categories.filter(c => c.type === formData.type);
 
+  const selectedCategory = useMemo(() => 
+    categories.find(c => c.id === formData.category_id),
+  [categories, formData.category_id]);
+
+  const showContactSelect = useMemo(() => {
+    if (!selectedCategory) return false;
+    const name = selectedCategory.name.toLowerCase();
+    return name.includes('vay') || name.includes('nợ');
+  }, [selectedCategory]);
+
   return (
     <Dialog open={true} onOpenChange={(open: boolean) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {initialData ? 'Sửa giao dịch' : 'Thêm giao dịch'}
@@ -182,6 +202,33 @@ export default function TransactionForm({ onSubmit, onClose, initialData }: Tran
               </div>
             )}
           </div>
+
+          {showContactSelect && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+              <Label htmlFor="contact">Đối tượng (Người vay/nợ)</Label>
+              <Select
+                value={formData.contact_id}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, contact_id: value }))}
+              >
+                <SelectTrigger id="contact" className="py-6">
+                  <SelectValue placeholder="Chọn người quen..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {contacts.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground text-center">
+                      Chưa có danh sách người quen. Hãy thêm ở mục Danh bạ.
+                    </div>
+                  ) : (
+                    contacts.map(contact => (
+                      <SelectItem key={contact.id} value={contact.id}>
+                        {contact.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="date">Ngày tháng</Label>
