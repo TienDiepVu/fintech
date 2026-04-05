@@ -40,12 +40,12 @@ export default function TransactionList({ transactions, onDelete, onEdit, loadin
         {transactions.map((tx) => (
           <Card 
             key={tx.id}
-            className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:shadow-md transition-all gap-4 border-none shadow-sm"
+            className="group flex items-center justify-between p-3 sm:p-4 hover:shadow-md transition-all gap-2 sm:gap-4 border-none shadow-sm"
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
               <div 
                 className={cn(
-                  "p-3 rounded-xl flex-shrink-0 flex items-center justify-center text-xl",
+                  "p-2 sm:p-3 rounded-xl flex-shrink-0 flex items-center justify-center text-lg sm:text-xl",
                   tx.type === 'income' 
                     ? "bg-emerald-500/10 text-emerald-500" 
                     : "bg-rose-500/10 text-rose-500"
@@ -53,42 +53,41 @@ export default function TransactionList({ transactions, onDelete, onEdit, loadin
               >
                 {tx.categories?.icon || (tx.type === 'income' ? '💰' : '💸')}
               </div>
-              <div>
-                <h4 className="font-semibold text-foreground">
+              <div className="min-w-0">
+                <h4 className="font-semibold text-foreground text-sm sm:text-base truncate">
                   {tx.categories?.name || 'Chưa phân loại'}
                 </h4>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-0.5">
-                  <span>{format(new Date(tx.date), 'dd/MM/yyyy')}</span>
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-sm text-muted-foreground mt-0.5">
+                  <span className="flex-shrink-0">{format(new Date(tx.date), 'dd/MM/yyyy')}</span>
                   {tx.note && (
                     <>
-                      <span className="w-1 h-1 bg-muted-foreground/30 rounded-full" />
-                      <span className="truncate max-w-[150px] sm:max-w-xs">{tx.note}</span>
+                      <span className="w-0.5 h-0.5 bg-muted-foreground/30 rounded-full flex-shrink-0" />
+                      <span className="truncate">{tx.note}</span>
                     </>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between sm:justify-end gap-4 ml-14 sm:ml-0">
+            <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-4">
               <span 
                 className={cn(
-                  "font-bold text-lg",
+                  "font-bold text-sm sm:text-lg whitespace-nowrap",
                   tx.type === 'income' ? "text-emerald-500" : "text-foreground"
                 )}
               >
                 {tx.type === 'income' ? '+' : '-'}
-                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(tx.amount)}
+                {new Intl.NumberFormat('vi-VN').format(tx.amount)}đ
               </span>
 
-              <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-0.5 sm:gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => onEdit(tx)}
-                  className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                  title="Sửa"
+                  className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
                 >
-                  <Edit2 size={16} />
+                  <Edit2 size={14} className="sm:w-4 sm:h-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -98,10 +97,9 @@ export default function TransactionList({ transactions, onDelete, onEdit, loadin
                       onDelete(tx.id);
                     }
                   }}
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                  title="Xóa"
+                  className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={14} className="sm:w-4 sm:h-4" />
                 </Button>
               </div>
             </div>

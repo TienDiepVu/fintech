@@ -30,7 +30,7 @@ export default function Header() {
               </h1>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden lg:flex items-center gap-1">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
