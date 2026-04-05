@@ -5,23 +5,20 @@ import { Loader2, ArrowUpRight, ArrowDownLeft, ChevronRight, History, ArrowLeft,
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import MonthPicker from '../components/ui/month-picker';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 export default function DebtsPage() {
-  const [filter, setFilter] = useState({
-    month: new Date().getMonth() + 1,
-    year: new Date().getFullYear()
-  });
-
-  const { transactions, monthlyStats, loading: loadingTransactions, hasMore, loadMore } = useTransactions(filter);
+  // Không sử dụng filter theo thời gian, lấy toàn bộ giao dịch của user
+  // Bằng cách không truyền tham số vào useTransactions()
+  const { transactions, monthlyStats, loading: loadingTransactions, hasMore, loadMore } = useTransactions();
   const { contacts, loading: loadingContacts } = useContacts();
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
 
+  // monthlyStats lúc này sẽ chứa allTransactions (toàn bộ giao dịch của user)
   const { allTransactions } = monthlyStats;
 
-  // Tính toán số nợ dựa trên allTransactions (toàn bộ trong tháng đang lọc)
+  // Tính toán số nợ dựa trên toàn bộ lịch sử giao dịch (allTransactions)
   const debtData = useMemo(() => {
     const data: Record<string, { owedToMe: number; iOwe: number }> = {};
     
@@ -60,41 +57,36 @@ export default function DebtsPage() {
   const owedToMeList = contactList.filter(c => c.owedToMe > 0).sort((a, b) => b.owedToMe - a.owedToMe);
 
   const selectedContact = contacts.find(c => c.id === selectedContactId);
+  // Lọc transactions theo contact đang chọn từ mảng transactions có phân trang
+  // Lưu ý: Nếu muốn xem toàn bộ lịch sử nợ, có thể cần filter từ allTransactions
   const contactTransactions = transactions.filter(t => t.contact_id === selectedContactId);
 
   if (selectedContactId) {
     return (
-      <div className="container max-w-2xl mx-auto p-4 space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => setSelectedContactId(null)}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold">{selectedContact?.name}</h1>
-              <p className="text-sm text-muted-foreground">Lịch sử vay nợ</p>
-            </div>
+      <div className="container max-w-2xl mx-auto p-4 space-y-6 pb-20 sm:pb-8">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => setSelectedContactId(null)}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold">{selectedContact?.name}</h1>
+            <p className="text-sm text-muted-foreground">Toàn bộ lịch sử vay nợ</p>
           </div>
-          <MonthPicker
-            month={filter.month}
-            year={filter.year}
-            onChange={(month, year) => setFilter({ month, year })}
-          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-rose-50 border-rose-100">
+          <Card className="bg-rose-50 border-rose-100 dark:bg-rose-500/5 dark:border-rose-500/20">
             <CardContent className="p-4">
-              <p className="text-xs text-rose-600 font-medium">Tôi nợ (tháng này)</p>
-              <p className="text-lg font-bold text-rose-700">
+              <p className="text-xs text-rose-600 font-medium">Tôi nợ</p>
+              <p className="text-lg font-bold text-rose-700 dark:text-rose-400">
                 {new Intl.NumberFormat('vi-VN').format(debtData[selectedContactId]?.iOwe || 0)}đ
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-emerald-50 border-emerald-100">
+          <Card className="bg-emerald-50 border-emerald-100 dark:bg-emerald-500/5 dark:border-emerald-500/20">
             <CardContent className="p-4">
-              <p className="text-xs text-emerald-600 font-medium">Nợ tôi (tháng này)</p>
-              <p className="text-lg font-bold text-emerald-700">
+              <p className="text-xs text-emerald-600 font-medium">Nợ tôi</p>
+              <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
                 {new Intl.NumberFormat('vi-VN').format(debtData[selectedContactId]?.owedToMe || 0)}đ
               </p>
             </CardContent>
@@ -109,11 +101,11 @@ export default function DebtsPage() {
           <div className="grid gap-3">
             {contactTransactions.length === 0 ? (
               <div className="text-center py-10 bg-muted/20 rounded-xl border border-dashed">
-                <p className="text-sm text-muted-foreground">Không có giao dịch trong tháng này.</p>
+                <p className="text-sm text-muted-foreground">Chưa có giao dịch nào.</p>
               </div>
             ) : (
               contactTransactions.map(t => (
-                <div key={t.id} className="flex items-center justify-between p-3 bg-card border rounded-xl">
+                <div key={t.id} className="flex items-center justify-between p-3 bg-card border rounded-xl shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "p-2 rounded-full",
@@ -163,14 +155,9 @@ export default function DebtsPage() {
   }
 
   return (
-    <div className="container max-w-2xl mx-auto p-4 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="container max-w-2xl mx-auto p-4 space-y-6 pb-20 sm:pb-8">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Quản lý vay nợ</h1>
-        <MonthPicker
-          month={filter.month}
-          year={filter.year}
-          onChange={(month, year) => setFilter({ month, year })}
-        />
       </div>
 
       <Tabs defaultValue="owe-me" className="w-full">
@@ -180,21 +167,25 @@ export default function DebtsPage() {
         </TabsList>
         
         <TabsContent value="owe-me" className="mt-6">
-          {owedToMeList.length === 0 ? (
+          {loadingTransactions && allTransactions.length === 0 ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : owedToMeList.length === 0 ? (
             <div className="text-center py-20 bg-muted/30 rounded-2xl border-2 border-dashed">
-              <p className="text-muted-foreground">Hiện không có ai nợ bạn trong tháng này.</p>
+              <p className="text-muted-foreground">Hiện không có ai nợ bạn.</p>
             </div>
           ) : (
             <div className="grid gap-3">
               {owedToMeList.map(contact => (
                 <Card 
                   key={contact.id} 
-                  className="cursor-pointer hover:bg-muted/50 transition-colors border-emerald-100"
+                  className="cursor-pointer hover:bg-muted/50 transition-colors border-emerald-100 dark:border-emerald-500/20"
                   onClick={() => setSelectedContactId(contact.id)}
                 >
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 dark:bg-emerald-500/10">
                         <User className="w-5 h-5" />
                       </div>
                       <div>
@@ -203,7 +194,7 @@ export default function DebtsPage() {
                       </div>
                     </div>
                     <div className="text-right flex items-center gap-2">
-                      <p className="text-emerald-600 font-bold">
+                      <p className="text-emerald-600 font-bold dark:text-emerald-400">
                         {new Intl.NumberFormat('vi-VN').format(contact.owedToMe)}đ
                       </p>
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -216,21 +207,25 @@ export default function DebtsPage() {
         </TabsContent>
 
         <TabsContent value="i-owe" className="mt-6">
-          {iOweList.length === 0 ? (
+          {loadingTransactions && allTransactions.length === 0 ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : iOweList.length === 0 ? (
             <div className="text-center py-20 bg-muted/30 rounded-2xl border-2 border-dashed">
-              <p className="text-muted-foreground">Bạn hiện không nợ ai trong tháng này.</p>
+              <p className="text-muted-foreground">Bạn hiện không nợ ai.</p>
             </div>
           ) : (
             <div className="grid gap-3">
               {iOweList.map(contact => (
                 <Card 
                   key={contact.id} 
-                  className="cursor-pointer hover:bg-muted/50 transition-colors border-rose-100"
+                  className="cursor-pointer hover:bg-muted/50 transition-colors border-rose-100 dark:border-rose-500/20"
                   onClick={() => setSelectedContactId(contact.id)}
                 >
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
+                      <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 dark:bg-rose-500/10">
                         <User className="w-5 h-5" />
                       </div>
                       <div>
@@ -239,7 +234,7 @@ export default function DebtsPage() {
                       </div>
                     </div>
                     <div className="text-right flex items-center gap-2">
-                      <p className="text-rose-600 font-bold">
+                      <p className="text-rose-600 font-bold dark:text-rose-400">
                         {new Intl.NumberFormat('vi-VN').format(contact.iOwe)}đ
                       </p>
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
