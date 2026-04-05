@@ -67,21 +67,23 @@ export default function DashboardPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+        <div className="col-span-2 md:col-span-1">
+          <SummaryCard
+            title="Số dư tháng này"
+            amount={balance}
+            icon={Wallet}
+            type="balance"
+          />
+        </div>
         <SummaryCard
-          title="Số dư tháng này"
-          amount={balance}
-          icon={Wallet}
-          type="balance"
-        />
-        <SummaryCard
-          title="Thu nhập tháng này"
+          title="Thu nhập"
           amount={totalIncome}
           icon={TrendingUp}
           type="income"
         />
         <SummaryCard
-          title="Chi tiêu tháng này"
+          title="Chi tiêu"
           amount={totalExpense}
           icon={TrendingDown}
           type="expense"

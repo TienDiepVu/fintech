@@ -73,8 +73,9 @@ export default function ExpenseChart({ transactions, monthDate = new Date() }: E
             dataKey="date" 
             axisLine={false} 
             tickLine={false} 
-            tick={{ fill: textColor, fontSize: 12 }}
+            tick={{ fill: textColor, fontSize: 10 }}
             dy={10}
+            interval={window.innerWidth < 640 ? 4 : 0} // Chỉ hiện mỗi 5 ngày trên Mobile
           />
           <YAxis 
             axisLine={false} 

@@ -44,9 +44,9 @@ export default function SummaryCard({ title, amount, icon: Icon, type }: Summary
         </div>
       </CardHeader>
       <CardContent>
-        <div className={cn("text-2xl font-bold", colors[type].text)}>
+        <div className={cn("text-xl sm:text-2xl font-bold truncate", colors[type].text)}>
           {type === 'expense' && amount > 0 ? '-' : ''}
-          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Math.abs(amount))}
+          {new Intl.NumberFormat('vi-VN').format(Math.abs(amount))}đ
         </div>
       </CardContent>
     </Card>
