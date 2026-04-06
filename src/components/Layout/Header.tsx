@@ -4,11 +4,15 @@ import { LogOut, Moon, Sun, Wallet, Users, LayoutDashboard, Landmark } from 'luc
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
+import { Avatar } from '../ui/avatar';
+import { ProfileDialog } from '../Account/ProfileDialog';
 
 export default function Header() {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const navItems = [
     { label: 'Tổng quan', path: '/', icon: LayoutDashboard },
@@ -61,9 +65,21 @@ export default function Header() {
             </Button>
             
             <div className="flex items-center gap-3 pl-4 border-l border-border">
-              <span className="text-sm font-medium text-foreground hidden sm:block">
-                {user?.email}
-              </span>
+              <button 
+                onClick={() => setIsProfileOpen(true)}
+                className="flex items-center gap-2 hover:bg-muted p-1 pr-2 rounded-lg transition-colors group"
+              >
+                <Avatar 
+                  src={profile?.avatar_url} 
+                  name={profile?.full_name || user?.email} 
+                  size="sm" 
+                  className="group-hover:ring-2 ring-primary/20 transition-all"
+                />
+                <span className="text-sm font-semibold text-foreground hidden sm:block max-w-[120px] truncate">
+                  {profile?.full_name || user?.email?.split('@')[0]}
+                </span>
+              </button>
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -77,6 +93,8 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      <ProfileDialog open={isProfileOpen} onOpenChange={setIsProfileOpen} />
     </header>
   );
 }
