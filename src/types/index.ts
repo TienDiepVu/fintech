@@ -27,3 +27,21 @@ export interface TransactionFormData {
   note: string;
   date: string;
 }
+
+export interface Profile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  phone: string | null;
+  birthday: string | null;
+  address: string | null;
+  avatar_url: string | null;
+  created_at: string;
+}
+
+export interface ProfileFormData {
+  full_name: string;
+  phone: string;
+  birthday: string;
+  address: string;
+}

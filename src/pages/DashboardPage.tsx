@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTransactions } from '../hooks/useTransactions';
+import { useAuth } from '../contexts/AuthContext';
 import SummaryCard from '../components/Dashboard/SummaryCard';
 import ExpenseChart from '../components/Dashboard/ExpenseChart';
 import TransactionList from '../components/Transactions/TransactionList';
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import type { Transaction, TransactionFormData } from '../types';
 
 export default function DashboardPage() {
+  const { user, profile } = useAuth();
   const [filter, setFilter] = useState({
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear()
@@ -55,7 +57,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-emerald-500 bg-clip-text text-transparent">
-            Xin chào! 👋
+            Xin chào, {profile?.full_name || user?.email?.split('@')[0]}! 👋
           </h2>
           <p className="text-sm text-foreground/60">Sổ tay thu chi cá nhân</p>
         </div>

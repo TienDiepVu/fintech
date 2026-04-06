@@ -11,6 +11,17 @@ export const categories = pgTable('categories', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+export const profiles = pgTable('profiles', {
+  id: uuid('id').primaryKey().notNull(), // Liên kết với auth.users.id
+  email: text('email').notNull(),
+  fullName: text('full_name'),
+  phone: text('phone'),
+  birthday: text('birthday'),
+  address: text('address'),
+  avatarUrl: text('avatar_url'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export const contacts = pgTable('contacts', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
